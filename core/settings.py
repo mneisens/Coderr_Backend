@@ -38,10 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'auth_app',
-    'baseinfo_app',
+    # 'baseinfo_app',
     'offers_app',
     'orders_app',
-    'profiles_app',
+    # 'profiles_app',
     'reviews_app',
 ]
 
@@ -128,7 +128,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'auth_app.User'
+# AUTH_USER_MODEL = 'auth_app.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -138,3 +138,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL  = '/media/'
