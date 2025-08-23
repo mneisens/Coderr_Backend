@@ -12,12 +12,13 @@ from .serializers import (
     OfferDetailSerializer
 )
 from .permissions import IsBusinessUser, IsOfferOwner
+from .filters import OfferFilter
 from profiles_app.models import Profile
 
 class OfferViewSet(viewsets.ModelViewSet):
     queryset = Offer.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['creator_id']
+    filterset_class = OfferFilter
     search_fields = ['title', 'description']
     ordering_fields = ['updated_at', 'min_price']
     
@@ -39,21 +40,7 @@ class OfferViewSet(viewsets.ModelViewSet):
         return []
     
     def get_queryset(self):
-        queryset = Offer.objects.all()
-        
-        creator_id = self.request.query_params.get('creator_id', None)
-        if creator_id is not None:
-            queryset = queryset.filter(user_id=creator_id)
-        
-        min_price = self.request.query_params.get('min_price', None)
-        if min_price is not None:
-            queryset = queryset.filter(details__price__gte=min_price).distinct()
-
-        max_delivery_time = self.request.query_params.get('max_delivery_time', None)
-        if max_delivery_time is not None:
-            queryset = queryset.filter(details__delivery_time_in_days__lte=max_delivery_time).distinct()
-        
-        return queryset
+        return Offer.objects.all()
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
