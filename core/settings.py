@@ -41,10 +41,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'django_filters',
 
     'auth_app',
     'profiles_app',
-    # 'offers_app',
+    'offers_app',
     # 'orders_app',
     # 'reviews_app',
 ]
