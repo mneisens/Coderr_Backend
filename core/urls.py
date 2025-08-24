@@ -14,13 +14,33 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 from django.http import JsonResponse
+from django.db.models import Avg, Count
+from auth_app.models import CustomUser
+from offers_app.models import Offer
+from reviews_app.models import Review
+
 
 def base_info(request):
-    """Übergreifende Informationen für die API"""
+    review_stats = Review.objects.aggregate(
+        review_count=Count('id'),
+        average_rating=Avg('rating')
+    )
+    
+    business_profile_count = CustomUser.objects.filter(type='business').count()
+    offer_count = Offer.objects.count()
+
+
+    average_rating = review_stats['average_rating']
+    if average_rating is not None:
+        average_rating = round(average_rating, 1)
+    else:
+        average_rating = 0.0
+    
     return JsonResponse({
-        "message": "Coderr API",
-        "version": "1.0.0",
-        "status": "active"
+        "review_count": review_stats['review_count'],
+        "average_rating": average_rating,
+        "business_profile_count": business_profile_count,
+        "offer_count": offer_count
     })
 
 urlpatterns = [
@@ -30,4 +50,5 @@ urlpatterns = [
     path('api/',include('profiles_app.api.urls')),
     path('api/',include('offers_app.api.urls')),
     path('api/',include('orders_app.api.urls')),
+    path('api/',include('reviews_app.api.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
