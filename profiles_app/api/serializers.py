@@ -19,11 +19,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # Ensure empty strings instead of null for required fields
         for field in ['first_name', 'last_name', 'location', 'tel', 'description', 'working_hours']:
             if data[field] is None:
                 data[field] = ''
-        # Ensure numeric fields are never null
         if data.get('user') is None:
             data['user'] = 0
         return data
@@ -35,7 +33,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # Ensure empty strings instead of null for required fields
         for field in ['first_name', 'last_name', 'location', 'tel', 'description', 'working_hours']:
             if data[field] is None:
                 data[field] = ''
