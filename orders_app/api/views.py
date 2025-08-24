@@ -12,11 +12,12 @@ from auth_app.models import CustomUser
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated, IsOrderParticipant]
+    pagination_class = None  # Deaktiviert Paginierung für einfaches Array
     
     def get_queryset(self):
         return Order.objects.filter(
             Q(customer_user=self.request.user) | Q(business_user=self.request.user)
-        )
+        ).order_by('-created_at')
     
     def get_serializer_class(self):
         if self.action == 'create':
