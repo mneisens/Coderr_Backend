@@ -21,22 +21,20 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
     
     def get_object(self):
         pk = self.kwargs.get('pk')
-        profile = get_object_or_404(Profile, user_id=pk)
+        profile = get_object_or_404(Profile, user__id=pk)
         self.check_object_permissions(self.request, profile)
         return profile
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def business_profiles(request):
-    business_users = CustomUser.objects.filter(type='business')
-    profiles = Profile.objects.filter(user__in=business_users)
+    profiles = Profile.objects.filter(user__type='business')
     serializer = ProfileSerializer(profiles, many=True)
     return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def customer_profiles(request):
-    customer_users = CustomUser.objects.filter(type='customer')
-    profiles = Profile.objects.filter(user__in=customer_users)
+    profiles = Profile.objects.filter(user__type='customer')
     serializer = ProfileSerializer(profiles, many=True)
     return Response(serializer.data)
