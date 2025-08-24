@@ -42,17 +42,8 @@ class OfferViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Offer.objects.all().order_by('-created_at')
     
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        offer_data = serializer.validated_data
-        offer_data['user'] = request.user
-        
-        offer = serializer.save()
-        
-        retrieve_serializer = OfferRetrieveSerializer(offer)
-        return Response(retrieve_serializer.data, status=status.HTTP_201_CREATED)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class OfferDetailViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = OfferDetail.objects.all()
