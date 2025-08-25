@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q
+from django.db.models import Q, Min
 from ..models import Offer, OfferDetail
 from .serializers import (
     OfferListSerializer, 
@@ -20,7 +20,7 @@ class OfferViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = OfferFilter
     search_fields = ['title', 'description']
-    ordering_fields = ['updated_at', 'min_price']
+    ordering_fields = ['updated_at']
     
     def get_serializer_class(self):
         if self.action == 'create':
@@ -40,7 +40,16 @@ class OfferViewSet(viewsets.ModelViewSet):
         return []
     
     def get_queryset(self):
-        return Offer.objects.all().order_by('-created_at')
+        queryset = Offer.objects.all()
+        ordering = self.request.query_params.get('ordering', None)
+        if ordering == 'min_price':
+            queryset = queryset.prefetch_related('details').order_by('details__price')
+        elif ordering == '-min_price':
+            queryset = queryset.prefetch_related('details').order_by('-details__price')
+        else:
+            queryset = queryset.order_by('-created_at')
+        
+        return queryset
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

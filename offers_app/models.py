@@ -14,7 +14,6 @@ class Offer(models.Model):
     
     @property
     def min_price(self):
-        """Gibt den niedrigsten Preis aller Details zurück"""
         details = self.details.all()
         if details.exists():
             return float(min(detail.price for detail in details))
@@ -22,7 +21,6 @@ class Offer(models.Model):
     
     @property
     def min_delivery_time(self):
-        """Gibt die kürzeste Lieferzeit aller Details zurück"""
         details = self.details.all()
         if details.exists():
             return int(min(detail.delivery_time_in_days for detail in details))
