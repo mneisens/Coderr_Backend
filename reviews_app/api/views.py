@@ -22,9 +22,26 @@ class ReviewViewSet(viewsets.ModelViewSet):
     
     def list(self, request, *args, **kwargs):
         if request.user.type == 'business':
+            # Business User sieht nur Bewertungen, die sie erhalten haben
             queryset = self.get_queryset().filter(business_user=request.user)
         else:
-            queryset = self.get_queryset()
+            # Customer User sieht nur Bewertungen, die sie selbst abgegeben haben
+            queryset = self.get_queryset().filter(reviewer=request.user)
+        
+        ordering = self.request.query_params.get('ordering', None)
+        if ordering:
+            if ordering == 'updated_at':
+                queryset = queryset.order_by('updated_at')
+            elif ordering == '-updated_at':
+                queryset = queryset.order_by('-updated_at')
+            elif ordering == 'rating':
+                queryset = queryset.order_by('rating')
+            elif ordering == '-rating':
+                queryset = queryset.order_by('-rating')
+            else:
+                queryset = queryset.order_by('-updated_at')
+        else:
+            queryset = queryset.order_by('-updated_at')
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
