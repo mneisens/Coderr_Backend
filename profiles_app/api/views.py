@@ -32,7 +32,7 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
         if response.status_code == 200:
             profile = self.get_object()
             serializer = ProfileSerializer(profile)
-            return Response(serializer.data, status=200)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         return response
 
@@ -42,7 +42,7 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
 def business_profiles(request):
     profiles = Profile.objects.filter(user__type='business')
     serializer = ProfileSerializer(profiles, many=True)
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -50,4 +50,4 @@ def business_profiles(request):
 def customer_profiles(request):
     profiles = Profile.objects.filter(user__type='customer')
     serializer = ProfileSerializer(profiles, many=True)
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)

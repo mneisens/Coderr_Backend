@@ -1,12 +1,12 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action, api_view, permission_classes
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from ..models import Order
 from .serializers import OrderSerializer, OrderCreateSerializer
-from .permissions import IsCustomerUser, IsOrderParticipant
+from .permissions import IsCustomerUser, IsOrderParticipant, IsBusinessUser
 from auth_app.models import CustomUser
 
 
@@ -30,6 +30,10 @@ class OrderViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsCustomerUser()]
         elif self.action in ['list', 'retrieve']:
             return [IsAuthenticated()]
+        elif self.action in ['update', 'partial_update']:
+            return [IsAuthenticated(), IsBusinessUser()]
+        elif self.action == 'destroy':
+            return [IsAuthenticated(), IsAdminUser()]
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
@@ -52,7 +56,7 @@ def order_count(request, business_user_id):
             status='in_progress'
         ).count()
 
-        return Response({'order_count': count})
+        return Response({'order_count': count}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -68,6 +72,6 @@ def completed_order_count(request, business_user_id):
             status='completed'
         ).count()
 
-        return Response({'completed_order_count': count})
+        return Response({'completed_order_count': count}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

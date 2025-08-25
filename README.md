@@ -70,12 +70,11 @@ Coderr_Backend/
 
 ### Port bereits in Verwendung
 ```bash
-python manage.py runserver 8001  # Anderer Port
+python manage.py runserver 8000  
 ```
 
 ### Datenbank-Reset
 ```bash
-python manage.py flush  # Daten löschen
 python manage.py migrate  # Migrationen anwenden
 ```
 
