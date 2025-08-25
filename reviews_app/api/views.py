@@ -1,14 +1,14 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-from django.db.models import Q
 from ..models import Review
-from .serializers import ReviewSerializer, ReviewUpdateSerializer, ReviewListSerializer, ReviewUpdateOnlySerializer, ReviewCreateOnlySerializer
+from .serializers import ReviewSerializer, ReviewUpdateOnlySerializer, ReviewCreateOnlySerializer
 from .permissions import IsCustomerUser, IsReviewOwner
 from rest_framework.exceptions import ValidationError
 from offers_app.models import Offer
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
@@ -20,14 +20,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Review.objects.all()
-    
+
     def list(self, request, *args, **kwargs):
         offers_view = request.query_params.get('offers_view', 'false').lower() == 'true'
         offer_id = request.query_params.get('offer', None)
         business_user_id = request.query_params.get('business_user', None)
         old_business_user_id = request.query_params.get('business_user_id', None)
         reviewer_id = request.query_params.get('reviewer_id', None)
-        
+
         if request.user.type == 'business':
             queryset = self.get_queryset().filter(offer__user=request.user)
         else:
@@ -38,7 +38,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 if offer:
                     queryset = self.get_queryset().filter(offer=offer.id)
                 else:
-                    queryset = self.get_queryset().none() 
+                    queryset = self.get_queryset().none()
             elif old_business_user_id:
                 offer = Offer.objects.filter(user_id=old_business_user_id).first()
                 if offer:
@@ -64,7 +64,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 queryset = queryset.order_by('-updated_at')
         else:
             queryset = queryset.order_by('-updated_at')
-        
+
         serializer = ReviewSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -76,20 +76,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
         elif self.action in ['retrieve', 'list']:
             return ReviewSerializer
         return ReviewSerializer
-    
+
     def get_permissions(self):
         if self.action == 'create':
             return [IsAuthenticated(), IsCustomerUser()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsReviewOwner()]
         return super().get_permissions()
-    
+
     def update(self, request, *args, **kwargs):
         try:
             return super().update(request, *args, **kwargs)
         except Exception as e:
             return Response({'error': str(e)}, status=400)
-    
+
     def destroy(self, request, *args, **kwargs):
         try:
             return super().destroy(request, *args, **kwargs)
@@ -101,14 +101,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
             offer = serializer.validated_data.get('offer')
             if not offer:
                 raise ValidationError('Kein Angebot gefunden für diesen Business User.')
-            
+
             if Review.objects.filter(reviewer=self.request.user, offer=offer).exists():
                 raise ValidationError('Sie haben bereits eine Bewertung für dieses Angebot abgegeben.')
-            
+
             serializer.save(reviewer=self.request.user)
         except Exception as e:
             raise ValidationError(f'Fehler beim Erstellen der Bewertung: {str(e)}')
-    
+
     def create(self, request, *args, **kwargs):
         offer_id = request.query_params.get('offer_id')
         if offer_id:

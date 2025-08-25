@@ -7,7 +7,7 @@ import django.db.models.deletion
 def migrate_reviews_to_offers(apps, schema_editor):
     Review = apps.get_model('reviews_app', 'Review')
     Offer = apps.get_model('offers_app', 'Offer')
-    
+
     # Für jede Bewertung, nehmen wir das erste Angebot des Business Users
     for review in Review.objects.all():
         try:
@@ -43,10 +43,10 @@ class Migration(migrations.Migration):
                 to='offers_app.offer'
             ),
         ),
-        
+
         # Migriere die Daten
         migrations.RunPython(migrate_reviews_to_offers),
-        
+
         # Mache das Feld nicht-nullable
         migrations.AlterField(
             model_name='review',
@@ -57,13 +57,13 @@ class Migration(migrations.Migration):
                 to='offers_app.offer'
             ),
         ),
-        
+
         # Ändere unique_together
         migrations.AlterUniqueTogether(
             name='review',
             unique_together={('offer', 'reviewer')},
         ),
-        
+
         # Entferne das alte business_user Feld
         migrations.RemoveField(
             model_name='review',

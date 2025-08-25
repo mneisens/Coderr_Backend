@@ -5,6 +5,7 @@ from django.db import transaction
 
 User = get_user_model()
 
+
 @receiver(post_migrate)
 def create_guest_users(sender, **kwargs):
     if sender.name == 'auth_app':
@@ -24,7 +25,7 @@ def create_guest_users(sender, **kwargs):
         with transaction.atomic():
             for user_type, user_data in GUEST_LOGINS.items():
                 username = user_data['username']
-        
+
                 if not User.objects.filter(username=username).exists():
                     # Erstelle den neuen Benutzer
                     User.objects.create_user(

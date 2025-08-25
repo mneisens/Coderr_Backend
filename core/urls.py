@@ -25,17 +25,16 @@ def base_info(request):
         review_count=Count('id'),
         average_rating=Avg('rating')
     )
-    
+
     business_profile_count = CustomUser.objects.filter(type='business').count()
     offer_count = Offer.objects.count()
-
 
     average_rating = review_stats['average_rating']
     if average_rating is not None:
         average_rating = round(average_rating, 1)
     else:
         average_rating = 0.0
-    
+
     return JsonResponse({
         "review_count": review_stats['review_count'],
         "average_rating": average_rating,
@@ -43,12 +42,13 @@ def base_info(request):
         "offer_count": offer_count
     })
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/base-info/', base_info, name='base-info'),
-    path('api/',include('auth_app.api.urls')),
-    path('api/',include('profiles_app.api.urls')),
-    path('api/',include('offers_app.api.urls')),
-    path('api/',include('orders_app.api.urls')),
-    path('api/',include('reviews_app.api.urls')),
+    path('api/', include('auth_app.api.urls')),
+    path('api/', include('profiles_app.api.urls')),
+    path('api/', include('offers_app.api.urls')),
+    path('api/', include('orders_app.api.urls')),
+    path('api/', include('reviews_app.api.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

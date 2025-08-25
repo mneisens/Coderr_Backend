@@ -9,31 +9,33 @@ from .serializers import ProfileSerializer, ProfileUpdateSerializer
 from .permissions import IsProfileOwner
 from auth_app.models import CustomUser
 
+
 class ProfileDetailView(generics.RetrieveUpdateAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated, IsProfileOwner]
-    
+
     def get_serializer_class(self):
         if self.request.method == 'PATCH':
             return ProfileUpdateSerializer
         return ProfileSerializer
-    
+
     def get_object(self):
         pk = self.kwargs.get('pk')
         profile = get_object_or_404(Profile, user__id=pk)
         self.check_object_permissions(self.request, profile)
         return profile
-    
+
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)
-        
+
         if response.status_code == 200:
             profile = self.get_object()
             serializer = ProfileSerializer(profile)
             return Response(serializer.data, status=200)
-        
+
         return response
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -41,6 +43,7 @@ def business_profiles(request):
     profiles = Profile.objects.filter(user__type='business')
     serializer = ProfileSerializer(profiles, many=True)
     return Response(serializer.data)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

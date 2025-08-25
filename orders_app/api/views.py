@@ -9,33 +9,34 @@ from .serializers import OrderSerializer, OrderCreateSerializer
 from .permissions import IsCustomerUser, IsOrderParticipant
 from auth_app.models import CustomUser
 
+
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated, IsOrderParticipant]
-    pagination_class = None  # Deaktiviert Paginierung für einfaches Array
-    
+    pagination_class = None 
+
     def get_queryset(self):
         return Order.objects.filter(
             Q(customer_user=self.request.user) | Q(business_user=self.request.user)
         ).order_by('-created_at')
-    
+
     def get_serializer_class(self):
         if self.action == 'create':
             return OrderCreateSerializer
         return OrderSerializer
-    
+
     def get_permissions(self):
         if self.action == 'create':
             return [IsAuthenticated(), IsCustomerUser()]
         elif self.action in ['list', 'retrieve']:
             return [IsAuthenticated()]
         return super().get_permissions()
-    
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
-        
+
         response_serializer = OrderSerializer(order)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -50,7 +51,7 @@ def order_count(request, business_user_id):
             business_user=business_user,
             status='in_progress'
         ).count()
-        
+
         return Response({'order_count': count})
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -66,7 +67,7 @@ def completed_order_count(request, business_user_id):
             business_user=business_user,
             status='completed'
         ).count()
-        
+
         return Response({'completed_order_count': count})
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
