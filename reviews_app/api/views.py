@@ -22,10 +22,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     
     def list(self, request, *args, **kwargs):
         if request.user.type == 'business':
-            # Business User sieht nur Bewertungen, die sie erhalten haben
             queryset = self.get_queryset().filter(business_user=request.user)
         else:
-            # Customer User sieht nur Bewertungen, die sie selbst abgegeben haben
             queryset = self.get_queryset().filter(reviewer=request.user)
         
         ordering = self.request.query_params.get('ordering', None)
