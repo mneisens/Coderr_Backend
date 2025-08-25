@@ -8,6 +8,7 @@ from ..models import Review
 from .serializers import ReviewSerializer, ReviewUpdateSerializer, ReviewListSerializer, ReviewUpdateOnlySerializer, ReviewCreateOnlySerializer
 from .permissions import IsCustomerUser, IsReviewOwner
 from rest_framework.exceptions import ValidationError
+from offers_app.models import Offer
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
@@ -24,7 +25,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         offers_view = request.query_params.get('offers_view', 'false').lower() == 'true'
         offer_id = request.query_params.get('offer', None)
         business_user_id = request.query_params.get('business_user', None)
-        
         old_business_user_id = request.query_params.get('business_user_id', None)
         reviewer_id = request.query_params.get('reviewer_id', None)
         
@@ -34,14 +34,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
             if offers_view and offer_id:
                 queryset = self.get_queryset().filter(offer=offer_id)
             elif offers_view and business_user_id:
-                from offers_app.models import Offer
                 offer = Offer.objects.filter(user_id=business_user_id).first()
                 if offer:
                     queryset = self.get_queryset().filter(offer=offer.id)
                 else:
-                    queryset = self.get_queryset().none()
+                    queryset = self.get_queryset().none() 
             elif old_business_user_id:
-                from offers_app.models import Offer
+
                 offer = Offer.objects.filter(user_id=old_business_user_id).first()
                 if offer:
                     queryset = self.get_queryset().filter(offer=offer.id)
@@ -51,7 +50,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 queryset = self.get_queryset().filter(reviewer=reviewer_id)
             else:
                 queryset = self.get_queryset().filter(reviewer=request.user)
-        
+
         ordering = self.request.query_params.get('ordering', None)
         if ordering:
             if ordering == 'updated_at':
@@ -122,4 +121,32 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if offer_id:
             request.data['offer'] = offer_id
         
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        
+        if response.status_code == 201:
+            created_review = Review.objects.filter(
+                reviewer=self.request.user,
+                offer=response.data.get('offer')
+            ).order_by('-created_at').first()
+            
+            if created_review:
+                queryset = self.get_queryset().filter(offer=created_review.offer)
+                ordering = self.request.query_params.get('ordering', None)
+                if ordering:
+                    if ordering == 'updated_at':
+                        queryset = queryset.order_by('updated_at')
+                    elif ordering == '-updated_at':
+                        queryset = queryset.order_by('-updated_at')
+                    elif ordering == 'rating':
+                        queryset = queryset.order_by('rating')
+                    elif ordering == '-rating':
+                        queryset = queryset.order_by('-rating')
+                    else:
+                        queryset = queryset.order_by('-updated_at')
+                else:
+                    queryset = queryset.order_by('-updated_at')
+                
+                serializer = ReviewListSerializer(queryset, many=True)
+                return Response(serializer.data, status=200)
+        
+        return response
