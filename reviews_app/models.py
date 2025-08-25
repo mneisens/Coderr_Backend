@@ -1,9 +1,9 @@
 from django.db import models
 from auth_app.models import CustomUser
+from offers_app.models import Offer
 
 class Review(models.Model):
-    business_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reviews_received',limit_choices_to={'type': 'business'}
-    )
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='reviews')
     reviewer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reviews_given')
     rating = models.IntegerField(choices=[
         (1, '1 Stern'),
@@ -17,8 +17,12 @@ class Review(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['business_user', 'reviewer']
+        unique_together = ['offer', 'reviewer']
         ordering = ['-updated_at']
 
     def __str__(self):
-        return f"Review von {self.reviewer.username} für {self.business_user.username} - {self.rating} Sterne"
+        return f"Review von {self.reviewer.username} für {self.offer.title} - {self.rating} Sterne"
+    
+    @property
+    def business_user(self):
+        return self.offer.user

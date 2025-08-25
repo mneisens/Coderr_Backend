@@ -40,7 +40,7 @@ class OrderCreateSerializer(serializers.Serializer):
             'price': offer_detail.price,
             'features': offer_detail.features,
             'offer_type': offer_detail.offer_type,
-            'status': 'pending'
+            'status': 'in_progress'
         }
         
         return Order.objects.create(**order_data)
