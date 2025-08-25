@@ -3,12 +3,15 @@ from ..models import Review
 from offers_app.models import Offer
 
 class ReviewSerializer(serializers.ModelSerializer):
-
+    business_user = serializers.SerializerMethodField()
     
     class Meta:
         model = Review
-        fields = ['id', 'reviewer', 'rating', 'description', 'created_at', 'updated_at', 'offer']
+        fields = ['id', 'reviewer', 'rating', 'description', 'created_at', 'updated_at', 'offer', 'business_user']
         read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at', 'offer']
+    
+    def get_business_user(self, obj):
+        return obj.offer.user.id
 
 
 class ReviewUpdateSerializer(serializers.ModelSerializer):

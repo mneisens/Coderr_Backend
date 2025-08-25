@@ -40,7 +40,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 else:
                     queryset = self.get_queryset().none() 
             elif old_business_user_id:
-
                 offer = Offer.objects.filter(user_id=old_business_user_id).first()
                 if offer:
                     queryset = self.get_queryset().filter(offer=offer.id)
@@ -66,24 +65,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
         else:
             queryset = queryset.order_by('-updated_at')
         
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = ReviewSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def get_serializer_class(self):
-        if self.action in ['update', 'partial_update']:
-            return ReviewUpdateSerializer
+        if self.action == 'create':
+            return ReviewCreateOnlySerializer
+        elif self.action in ['update', 'partial_update']:
+            return ReviewUpdateOnlySerializer
         elif self.action in ['retrieve', 'list']:
-            return ReviewListSerializer
-        return ReviewListSerializer
+            return ReviewSerializer
+        return ReviewSerializer
     
-    def get_serializer(self, *args, **kwargs):
-        if self.action in ['update', 'partial_update']:
-            return ReviewUpdateOnlySerializer(*args, **kwargs)
-        elif self.action == 'create':
-            return ReviewCreateOnlySerializer(*args, **kwargs)
-        serializer_class = self.get_serializer_class()
-        return serializer_class(*args, **kwargs)
-
     def get_permissions(self):
         if self.action == 'create':
             return [IsAuthenticated(), IsCustomerUser()]
@@ -120,33 +113,4 @@ class ReviewViewSet(viewsets.ModelViewSet):
         offer_id = request.query_params.get('offer_id')
         if offer_id:
             request.data['offer'] = offer_id
-        
-        response = super().create(request, *args, **kwargs)
-        
-        if response.status_code == 201:
-            created_review = Review.objects.filter(
-                reviewer=self.request.user,
-                offer=response.data.get('offer')
-            ).order_by('-created_at').first()
-            
-            if created_review:
-                queryset = self.get_queryset().filter(offer=created_review.offer)
-                ordering = self.request.query_params.get('ordering', None)
-                if ordering:
-                    if ordering == 'updated_at':
-                        queryset = queryset.order_by('updated_at')
-                    elif ordering == '-updated_at':
-                        queryset = queryset.order_by('-updated_at')
-                    elif ordering == 'rating':
-                        queryset = queryset.order_by('rating')
-                    elif ordering == '-rating':
-                        queryset = queryset.order_by('-rating')
-                    else:
-                        queryset = queryset.order_by('-updated_at')
-                else:
-                    queryset = queryset.order_by('-updated_at')
-                
-                serializer = ReviewListSerializer(queryset, many=True)
-                return Response(serializer.data, status=200)
-        
-        return response
+        return super().create(request, *args, **kwargs)
