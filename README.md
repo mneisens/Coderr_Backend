@@ -66,18 +66,6 @@ Coderr_Backend/
 └── manage.py         # Django-Management
 ```
 
-## Troubleshooting
-
-### Port bereits in Verwendung
-```bash
-python manage.py runserver 8000  
-```
-
-### Datenbank-Reset
-```bash
-python manage.py migrate  # Migrationen anwenden
-```
-
 ## Support
 
 Bei Problemen:
