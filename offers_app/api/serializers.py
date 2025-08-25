@@ -12,6 +12,13 @@ class OfferDetailCreateSerializer(serializers.ModelSerializer):
         model = OfferDetail
         fields = ['title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
 
+class OfferDetailUpdateSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    
+    class Meta:
+        model = OfferDetail
+        fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
+
 class UserDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
@@ -59,6 +66,46 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         if len(value) != 3:
             raise serializers.ValidationError("Ein Angebot muss genau 3 Details enthalten.")
         return value
+
+class OfferUpdateSerializer(serializers.ModelSerializer):
+    details = OfferDetailUpdateSerializer(many=True, required=False)
+    
+    class Meta:
+        model = Offer
+        fields = ['title', 'image', 'description', 'details']
+    
+    def update(self, instance, validated_data):
+        details_data = validated_data.pop('details', None)
+        instance.title = validated_data.get('title', instance.title)
+        instance.image = validated_data.get('image', instance.image)
+        instance.description = validated_data.get('description', instance.description)
+        instance.save()
+        
+        if details_data:
+            for detail_data in details_data:
+                detail_id = detail_data.get('id')
+                if detail_id:
+                    try:
+                        detail = OfferDetail.objects.get(id=detail_id, offer=instance)
+                        for field, value in detail_data.items():
+                            if field != 'id' and hasattr(detail, field):
+                                setattr(detail, field, value)
+                        detail.save()
+                    except OfferDetail.DoesNotExist:
+                        pass
+                else:
+                    offer_type = detail_data.get('offer_type')
+                    if offer_type:
+                        try:
+                            detail = OfferDetail.objects.get(offer=instance, offer_type=offer_type)
+                            for field, value in detail_data.items():
+                                if field != 'id' and hasattr(detail, field):
+                                    setattr(detail, field, value)
+                            detail.save()
+                        except OfferDetail.DoesNotExist:
+                            pass
+        
+        return instance
 
 class OfferDetailSerializer(serializers.ModelSerializer):
     class Meta:

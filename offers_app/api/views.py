@@ -9,7 +9,9 @@ from .serializers import (
     OfferListSerializer, 
     OfferCreateSerializer, 
     OfferRetrieveSerializer,
-    OfferDetailSerializer
+    OfferDetailSerializer,
+    OfferUpdateSerializer,
+    OfferDetailUpdateSerializer
 )
 from .permissions import IsBusinessUser, IsOfferOwner
 from .filters import OfferFilter
@@ -25,6 +27,8 @@ class OfferViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return OfferCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return OfferUpdateSerializer
         elif self.action == 'retrieve':
             return OfferRetrieveSerializer
         else:
@@ -54,7 +58,17 @@ class OfferViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-class OfferDetailViewSet(viewsets.ReadOnlyModelViewSet):
+class OfferDetailViewSet(viewsets.ModelViewSet):
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_serializer_class(self):
+        if self.action in ['update', 'partial_update']:
+            return OfferDetailUpdateSerializer
+        return OfferDetailSerializer
+    
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update', 'destroy']:
+            return [IsAuthenticated(), IsOfferOwner()]
+        return [IsAuthenticated()]
