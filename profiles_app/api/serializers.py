@@ -4,19 +4,19 @@ from auth_app.models import CustomUser
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.id')
-    username = serializers.ReadOnlyField(source='user.username')
-    email = serializers.ReadOnlyField(source='user.email')
-    type = serializers.ReadOnlyField(source='user.type')
+    """
+    Main serializer for Profile objects.
+    Used for retrieving and updating profile information.
+    """
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    type = serializers.CharField(source='user.type', read_only=True)
 
     class Meta:
         model = Profile
-        fields = [
-            'user', 'username', 'first_name', 'last_name', 'file',
-            'location', 'tel', 'description', 'working_hours',
-            'type', 'email', 'created_at'
-        ]
-        read_only_fields = ['user', 'username', 'email', 'type', 'created_at']
+        fields = ['user', 'username', 'first_name', 'last_name', 'file', 'location', 
+                 'tel', 'description', 'working_hours', 'type', 'email', 'created_at']
+        read_only_fields = ['user', 'created_at']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -29,16 +29,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class ProfileListSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.id')
-    username = serializers.ReadOnlyField(source='user.username')
-    type = serializers.ReadOnlyField(source='user.type')
+    """
+    Serializer for listing business profiles.
+    Excludes email and created_at fields.
+    """
+    username = serializers.CharField(source='user.username', read_only=True)
+    type = serializers.CharField(source='user.type', read_only=True)
 
     class Meta:
         model = Profile
-        fields = [
-            'user', 'username', 'first_name', 'last_name', 'file',
-            'location', 'tel', 'description', 'working_hours', 'type'
-        ]
+        fields = ['user', 'username', 'first_name', 'last_name', 'file', 'location', 
+                 'tel', 'description', 'working_hours', 'type']
         read_only_fields = ['user', 'username', 'type']
 
     def to_representation(self, instance):
@@ -52,34 +53,31 @@ class ProfileListSerializer(serializers.ModelSerializer):
 
 
 class CustomerProfileListSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.id')
-    username = serializers.ReadOnlyField(source='user.username')
-    type = serializers.ReadOnlyField(source='user.type')
-    uploaded_at = serializers.ReadOnlyField(source='created_at')
+    """
+    Serializer for listing customer profiles.
+    Uses uploaded_at instead of created_at.
+    """
+    username = serializers.CharField(source='user.username', read_only=True)
+    type = serializers.CharField(source='user.type', read_only=True)
+    uploaded_at = serializers.DateTimeField(source='created_at', read_only=True)
 
     class Meta:
         model = Profile
-        fields = [
-            'user', 'username', 'first_name', 'last_name', 'file', 'uploaded_at', 'type'
-        ]
-        read_only_fields = ['user', 'username', 'type', 'uploaded_at']
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        for field in ['first_name', 'last_name']:
-            if data[field] is None:
-                data[field] = ''
-        if data.get('user') is None:
-            data['user'] = 0
-        return data
+        fields = ['user', 'username', 'first_name', 'last_name', 'file', 
+                 'uploaded_at', 'type']
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating profile information.
+    Handles both profile and user email updates.
+    """
     email = serializers.EmailField(required=False)
 
     class Meta:
         model = Profile
-        fields = ['first_name', 'last_name', 'location', 'tel', 'description', 'working_hours', 'email']
+        fields = ['first_name', 'last_name', 'location', 'tel', 'description', 
+                 'working_hours', 'email']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -89,8 +87,19 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         return data
 
     def update(self, instance, validated_data):
+        """
+        Updates profile and user email if provided.
+        """
         email = validated_data.pop('email', None)
+        
+        # Update profile fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update user email if provided
         if email:
             instance.user.email = email
             instance.user.save()
-        return super().update(instance, validated_data)
+        
+        return instance

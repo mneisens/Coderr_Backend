@@ -12,11 +12,19 @@ from auth_app.models import CustomUser
 
 
 class OrderViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Order objects.
+    Provides CRUD operations for orders with role-based access control.
+    """
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated, IsOrderParticipant]
     pagination_class = None 
 
     def get_queryset(self):
+        """
+        Returns orders based on user role.
+        Admin users can see all orders, regular users see only their own orders.
+        """
         if self.request.user.is_staff:
             return Order.objects.all().order_by('-created_at')
         return Order.objects.filter(
@@ -24,11 +32,17 @@ class OrderViewSet(viewsets.ModelViewSet):
         ).order_by('-created_at')
 
     def get_serializer_class(self):
+        """
+        Returns the appropriate serializer class based on the action.
+        """
         if self.action == 'create':
             return OrderCreateSerializer
         return OrderSerializer
 
     def get_permissions(self):
+        """
+        Returns the appropriate permission classes based on the action.
+        """
         if self.action == 'create':
             return [IsAuthenticated(), IsCustomerUser()]
         elif self.action in ['list', 'retrieve']:
@@ -40,6 +54,9 @@ class OrderViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
+        """
+        Creates a new order and returns it with 201 status code.
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
@@ -51,7 +68,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def order_count(request, business_user_id):
-    """Gibt die Anzahl der laufenden Bestellungen eines Business Users zurück"""
+    """
+    Returns the count of in-progress orders for a specific business user.
+    """
     try:
         business_user = get_object_or_404(CustomUser, id=business_user_id, type='business')
         count = Order.objects.filter(
@@ -69,7 +88,9 @@ def order_count(request, business_user_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def completed_order_count(request, business_user_id):
-    """Gibt die Anzahl der abgeschlossenen Bestellungen eines Business Users zurück"""
+    """
+    Returns the count of completed orders for a specific business user.
+    """
     try:
         business_user = get_object_or_404(CustomUser, id=business_user_id, type='business')
         count = Order.objects.filter(

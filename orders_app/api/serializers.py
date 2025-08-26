@@ -4,46 +4,58 @@ from offers_app.models import OfferDetail
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    """
+    Main serializer for Order objects.
+    Used for listing, retrieving, and updating orders.
+    """
     class Meta:
         model = Order
-        fields = [
-            'id', 'customer_user', 'business_user', 'title', 'revisions',
-            'delivery_time_in_days', 'price', 'features', 'offer_type',
-            'status', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'customer_user', 'business_user', 'title', 'revisions', 
+                 'delivery_time_in_days', 'price', 'features', 'offer_type', 
+                 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'customer_user', 'business_user', 'title', 
+                           'revisions', 'delivery_time_in_days', 'price', 
+                           'features', 'offer_type', 'created_at', 'updated_at']
 
 
-class OrderCreateSerializer(serializers.Serializer):
-    offer_detail_id = serializers.IntegerField(required=False, allow_null=True)
+class OrderCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating orders.
+    Creates an order from an offer detail.
+    """
+    offer_detail_id = serializers.IntegerField()
+
+    class Meta:
+        model = Order
+        fields = ['offer_detail_id']
 
     def validate_offer_detail_id(self, value):
-        if value is None:
-            raise serializers.ValidationError("This field is required.")
-        return value
+        """
+        Validates that the offer detail exists.
+        """
+        try:
+            offer_detail = OfferDetail.objects.get(id=value)
+            return value
+        except OfferDetail.DoesNotExist:
+            raise serializers.ValidationError("Offer detail not found.")
 
     def create(self, validated_data):
-        offer_detail_id = validated_data.get('offer_detail_id')
-
-        if not offer_detail_id:
-            raise serializers.ValidationError({"offer_detail_id": "This field is required."})
-
-        try:
-            offer_detail = OfferDetail.objects.get(id=offer_detail_id)
-        except OfferDetail.DoesNotExist:
-            raise serializers.ValidationError(
-                {"offer_detail_id": "Das angegebene Angebotsdetail wurde nicht gefunden."})
-
-        order_data = {
-            'customer_user': self.context['request'].user,
-            'business_user': offer_detail.offer.user,
-            'title': offer_detail.title,
-            'revisions': offer_detail.revisions,
-            'delivery_time_in_days': offer_detail.delivery_time_in_days,
-            'price': offer_detail.price,
-            'features': offer_detail.features,
-            'offer_type': offer_detail.offer_type,
-            'status': 'in_progress'
-        }
-
-        return Order.objects.create(**order_data)
+        """
+        Creates an order from an offer detail.
+        """
+        offer_detail_id = validated_data.pop('offer_detail_id')
+        offer_detail = OfferDetail.objects.get(id=offer_detail_id)
+        
+        order = Order.objects.create(
+            customer_user=self.context['request'].user,
+            business_user=offer_detail.offer.user,
+            title=offer_detail.title,
+            revisions=offer_detail.revisions,
+            delivery_time_in_days=offer_detail.delivery_time_in_days,
+            price=offer_detail.price,
+            features=offer_detail.features,
+            offer_type=offer_detail.offer_type,
+            status='in_progress'
+        )
+        
+        return order

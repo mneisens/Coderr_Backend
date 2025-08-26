@@ -14,12 +14,20 @@ from offers_app.models import Offer
 
 
 class ReviewPagination(PageNumberPagination):
+    """
+    Custom pagination class for Review endpoints.
+    Allows clients to specify page size via 'page_size' query parameter.
+    """
     page_size = 6
     page_size_query_param = 'page_size'
     max_page_size = 6
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Review objects.
+    Provides CRUD operations for reviews with filtering and ordering capabilities.
+    """
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -29,9 +37,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
     pagination_class = ReviewPagination
 
     def get_queryset(self):
+        """
+        Returns the base queryset for reviews.
+        """
         return Review.objects.all()
 
     def list(self, request, *args, **kwargs):
+        """
+        Lists reviews with advanced filtering and pagination.
+        Supports filtering by business user, offer, and reviewer.
+        """
         offers_view = request.query_params.get('offers_view', 'false').lower() == 'true'
         offer_id = request.query_params.get('offer', None)
         business_user_id = request.query_params.get('business_user', None)
@@ -75,7 +90,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         else:
             queryset = queryset.order_by('-updated_at')
 
-        
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = ReviewSerializer(page, many=True)
@@ -85,6 +99,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def get_serializer_class(self):
+        """
+        Returns the appropriate serializer class based on the action.
+        """
         if self.action == 'create':
             return ReviewCreateOnlySerializer
         elif self.action in ['update', 'partial_update']:
@@ -94,6 +111,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return ReviewSerializer
 
     def get_permissions(self):
+        """
+        Returns the appropriate permission classes based on the action.
+        """
         if self.action == 'create':
             return [IsAuthenticated(), IsCustomerUser()]
         elif self.action in ['update', 'partial_update', 'destroy']:
@@ -101,6 +121,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def update(self, request, *args, **kwargs):
+        """
+        Updates a review and returns the full review object.
+        Handles 404 and permission errors with appropriate status codes.
+        """
         try:
             response = super().update(request, *args, **kwargs)
 
@@ -116,6 +140,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
+        """
+        Deletes a review.
+        Handles 404 and permission errors with appropriate status codes.
+        """
         try:
             return super().destroy(request, *args, **kwargs)
         except Http404:
@@ -126,6 +154,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
+        """
+        Performs the actual creation of a review.
+        Validates that the user hasn't already reviewed this offer.
+        """
         print(f"=== PERFORM CREATE ===")
         print(f"Validated data: {serializer.validated_data}")
         
@@ -146,6 +178,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         print(f"=== END PERFORM CREATE ===")
 
     def create(self, request, *args, **kwargs):
+        """
+        Creates a new review with business user to offer mapping.
+        Handles duplicate review validation and returns appropriate error messages.
+        """
         print(f"=== CREATE REVIEW ===")
         print(f"Request data: {request.data}")
         print(f"Query params: {request.query_params}")

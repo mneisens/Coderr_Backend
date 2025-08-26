@@ -4,6 +4,10 @@ from profiles_app.models import Profile
 
 
 class OfferDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer for OfferDetail objects.
+    Used for detailed representation of offer details.
+    """
     class Meta:
         model = OfferDetail
         fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
@@ -16,6 +20,10 @@ class OfferDetailCreateSerializer(serializers.ModelSerializer):
 
 
 class OfferDetailUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating OfferDetail objects.
+    Used specifically for PATCH operations on offer details.
+    """
     id = serializers.IntegerField(required=False)
 
     class Meta:
@@ -30,6 +38,10 @@ class UserDetailsSerializer(serializers.ModelSerializer):
 
 
 class OfferListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing offers.
+    Includes basic offer information and user details.
+    """
     details = serializers.SerializerMethodField()
     min_price = serializers.ReadOnlyField()
     min_delivery_time = serializers.ReadOnlyField()
@@ -41,10 +53,16 @@ class OfferListSerializer(serializers.ModelSerializer):
                   'details', 'min_price', 'min_delivery_time', 'user_details']
 
     def get_details(self, obj):
+        """
+        Returns a list of offer detail URLs.
+        """
         details = obj.details.all()
         return [{'id': detail.id, 'url': f'/api/offerdetails/{detail.id}/'} for detail in details]
 
     def get_user_details(self, obj):
+        """
+        Returns basic user information for the offer creator.
+        """
         try:
             profile = Profile.objects.get(user=obj.user)
             return UserDetailsSerializer(profile).data
@@ -53,6 +71,10 @@ class OfferListSerializer(serializers.ModelSerializer):
 
 
 class OfferCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating offers.
+    Handles nested offer details creation.
+    """
     details = OfferDetailCreateSerializer(many=True)
 
     class Meta:
@@ -60,6 +82,9 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         fields = ['title', 'image', 'description', 'details']
 
     def create(self, validated_data):
+        """
+        Creates an offer with nested offer details.
+        """
         details_data = validated_data.pop('details')
         offer = Offer.objects.create(**validated_data)
 
@@ -71,6 +96,9 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         return offer
 
     def to_representation(self, instance):
+        """
+        Returns the created offer with full details.
+        """
         data = super().to_representation(instance)
         response_data = {
             'id': instance.id,
@@ -95,6 +123,10 @@ class OfferCreateSerializer(serializers.ModelSerializer):
 
 
 class OfferUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating offers.
+    Handles nested offer details updates.
+    """
     details = OfferDetailUpdateSerializer(many=True, required=False)
 
     class Meta:
@@ -102,6 +134,9 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         fields = ['title', 'image', 'description', 'details']
 
     def update(self, instance, validated_data):
+        """
+        Updates an offer and its details.
+        """
         details_data = validated_data.pop('details', None)
         instance.title = validated_data.get('title', instance.title)
         instance.image = validated_data.get('image', instance.image)
@@ -135,6 +170,9 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
+        """
+        Returns the updated offer with full details.
+        """
         data = super().to_representation(instance)
         response_data = {
             'id': instance.id,
@@ -150,6 +188,10 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
 
 
 class OfferRetrieveSerializer(serializers.ModelSerializer):
+    """
+    Serializer for retrieving single offers.
+    Includes full offer details and metadata.
+    """
     details = serializers.SerializerMethodField()
     min_price = serializers.ReadOnlyField()
     min_delivery_time = serializers.ReadOnlyField()
@@ -160,5 +202,8 @@ class OfferRetrieveSerializer(serializers.ModelSerializer):
                   'details', 'min_price', 'min_delivery_time']
 
     def get_details(self, obj):
+        """
+        Returns full offer details with complete information.
+        """
         details = obj.details.all()
         return OfferDetailSerializer(details, many=True).data
