@@ -40,48 +40,56 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
         Updates a profile and returns it with 200 status code.
         """
         response = super().update(request, *args, **kwargs)
-        return Response(response.data, status=status.HTTP_200_OK)
+        
+        # Return the full profile data using ProfileSerializer for frontend compatibility
+        instance = self.get_object()
+        serializer = ProfileSerializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BusinessProfilesView(generics.ListAPIView):
     """
     View for listing all business user profiles.
-    Returns a paginated list of business profiles.
+    Returns a simple list of business profiles without pagination.
     """
     serializer_class = ProfileListSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         """
         Returns all business user profiles.
         """
-        return Profile.objects.filter(user__type='business')
+        return Profile.objects.filter(user__type='business').order_by('user__username')
 
     def list(self, request, *args, **kwargs):
         """
         Lists business profiles and returns them with 200 status code.
         """
-        response = super().list(request, *args, **kwargs)
-        return Response(response.data, status=status.HTTP_200_OK)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CustomerProfilesView(generics.ListAPIView):
     """
     View for listing all customer user profiles.
-    Returns a paginated list of customer profiles.
+    Returns a simple list of customer profiles without pagination.
     """
     serializer_class = CustomerProfileListSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         """
         Returns all customer user profiles.
         """
-        return Profile.objects.filter(user__type='customer')
+        return Profile.objects.filter(user__type='customer').order_by('user__username')
 
     def list(self, request, *args, **kwargs):
         """
         Lists customer profiles and returns them with 200 status code.
         """
-        response = super().list(request, *args, **kwargs)
-        return Response(response.data, status=status.HTTP_200_OK)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

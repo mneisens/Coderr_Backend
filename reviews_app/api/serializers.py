@@ -68,32 +68,21 @@ class ReviewCreateOnlySerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ['offer', 'rating', 'description', 'business_user', 'business_user_id']
-        read_only_fields = ['offer']
-
-    def to_internal_value(self, data):
-        data_copy = data.copy()
-        
-        if 'business_user' in data_copy:
-            business_user_id = data_copy.pop('business_user')
-            self.context['business_user_id'] = business_user_id
-            
-        if 'business_user_id' in data_copy:
-            business_user_id = data_copy.pop('business_user_id')
-            self.context['business_user_id'] = business_user_id
-            
-        return super().to_internal_value(data_copy)
 
     def validate(self, data):
         """
         Validates review data and handles business user to offer mapping.
         """
-        business_user = data.get('business_user') or data.get('business_user_id')
+        business_user_id = data.get('business_user') or data.get('business_user_id')
         
-        if not data.get('offer') and business_user:
-            offer = Offer.objects.filter(user_id=business_user).first()
+        if not data.get('offer') and business_user_id:
+            offer = Offer.objects.filter(user_id=business_user_id).first()
             if offer:
                 data['offer'] = offer
             else:
                 raise serializers.ValidationError("No offer found for this business user.")
+        
+        data.pop('business_user', None)
+        data.pop('business_user_id', None)
         
         return data
