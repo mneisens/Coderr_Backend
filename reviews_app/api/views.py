@@ -133,7 +133,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         except Http404:
             return Response({'error': 'No Review matches the given query.'}, status=status.HTTP_404_NOT_FOUND)
         except PermissionDenied:
-            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Der Benutzer ist nicht berechtigt, diese Bewertung zu bearbeiten.'}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -147,7 +147,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         except Http404:
             return Response({'error': 'No Review matches the given query.'}, status=status.HTTP_404_NOT_FOUND)
         except PermissionDenied:
-            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Der Benutzer ist nicht berechtigt, diese Bewertung zu löschen.'}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -218,17 +218,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
             
             review = serializer.save(reviewer=request.user)
             
-            business_user_id = data.get('business_user')
-            if business_user_id:
-                offer = Offer.objects.filter(user_id=business_user_id).first()
-                if offer:
-                    all_reviews = Review.objects.filter(offer=offer).order_by('-updated_at')
-                    response_serializer = ReviewSerializer(all_reviews, many=True)
-                    return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-            
-            # Fallback: return just the created review as array
             response_serializer = ReviewSerializer(review)
-            return Response([response_serializer.data], status=status.HTTP_201_CREATED)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
