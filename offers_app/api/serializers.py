@@ -161,4 +161,4 @@ class OfferRetrieveSerializer(serializers.ModelSerializer):
 
     def get_details(self, obj):
         details = obj.details.all()
-        return [{'id': detail.id, 'url': f'http://127.0.0.1:8000/api/offerdetails/{detail.id}/'} for detail in details]
+        return OfferDetailSerializer(details, many=True).data

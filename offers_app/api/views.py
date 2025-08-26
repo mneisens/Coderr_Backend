@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Min
 from ..models import Offer, OfferDetail
@@ -18,12 +19,19 @@ from .filters import OfferFilter
 from profiles_app.models import Profile
 
 
+class OfferPagination(PageNumberPagination):
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 6
+
+
 class OfferViewSet(viewsets.ModelViewSet):
     queryset = Offer.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = OfferFilter
     search_fields = ['title', 'description']
     ordering_fields = ['updated_at']
+    pagination_class = OfferPagination
 
     def get_serializer_class(self):
         if self.action == 'create':

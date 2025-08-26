@@ -3,11 +3,20 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
+from rest_framework.pagination import PageNumberPagination
+from django.http import Http404
+from rest_framework.exceptions import PermissionDenied
 from ..models import Review
 from .serializers import ReviewSerializer, ReviewUpdateOnlySerializer, ReviewCreateOnlySerializer
 from .permissions import IsCustomerUser, IsReviewOwner
 from rest_framework.exceptions import ValidationError
 from offers_app.models import Offer
+
+
+class ReviewPagination(PageNumberPagination):
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 6
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -17,6 +26,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filterset_fields = ['reviewer']
     ordering_fields = ['updated_at', 'rating']
     ordering = ['-updated_at']
+    pagination_class = ReviewPagination
 
     def get_queryset(self):
         return Review.objects.all()
@@ -65,6 +75,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
         else:
             queryset = queryset.order_by('-updated_at')
 
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = ReviewSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = ReviewSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -86,13 +102,26 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
-            return super().update(request, *args, **kwargs)
+            response = super().update(request, *args, **kwargs)
+
+            instance = self.get_object()
+            serializer = ReviewSerializer(instance)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Http404:
+            return Response({'error': 'No Review matches the given query.'}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionDenied:
+            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
         try:
             return super().destroy(request, *args, **kwargs)
+        except Http404:
+            return Response({'error': 'No Review matches the given query.'}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionDenied:
+            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

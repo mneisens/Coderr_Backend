@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action, api_view, permission_classes
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 from ..models import Order
 from .serializers import OrderSerializer, OrderCreateSerializer
 from .permissions import IsCustomerUser, IsOrderParticipant, IsBusinessUser
@@ -59,6 +60,8 @@ def order_count(request, business_user_id):
         ).count()
 
         return Response({'order_count': count}, status=status.HTTP_200_OK)
+    except Http404:
+        return Response({'error': 'No CustomUser matches the given query.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -75,5 +78,7 @@ def completed_order_count(request, business_user_id):
         ).count()
 
         return Response({'completed_order_count': count}, status=status.HTTP_200_OK)
+    except Http404:
+        return Response({'error': 'No CustomUser matches the given query.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
