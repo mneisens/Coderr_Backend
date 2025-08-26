@@ -27,7 +27,6 @@ def create_guest_users(sender, **kwargs):
                 username = user_data['username']
 
                 if not User.objects.filter(username=username).exists():
-                    # Erstelle den neuen Benutzer
                     User.objects.create_user(
                         username=username,
                         email=user_data['email'],

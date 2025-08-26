@@ -16,6 +16,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     pagination_class = None 
 
     def get_queryset(self):
+        if self.request.user.is_staff:
+            return Order.objects.all().order_by('-created_at')
         return Order.objects.filter(
             Q(customer_user=self.request.user) | Q(business_user=self.request.user)
         ).order_by('-created_at')

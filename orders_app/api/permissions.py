@@ -7,11 +7,7 @@ class IsCustomerUser(permissions.BasePermission):
         if not request.user.is_authenticated:
             return False
 
-        try:
-            profile = Profile.objects.get(user=request.user)
-            return profile.type == 'customer'
-        except Profile.DoesNotExist:
-            return False
+        return request.user.type == 'customer'
 
 
 class IsBusinessUser(permissions.BasePermission):
@@ -19,11 +15,7 @@ class IsBusinessUser(permissions.BasePermission):
         if not request.user.is_authenticated:
             return False
 
-        try:
-            profile = Profile.objects.get(user=request.user)
-            return profile.type == 'business'
-        except Profile.DoesNotExist:
-            return False
+        return request.user.type == 'business'
 
 
 class IsOrderParticipant(permissions.BasePermission):

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from ..models import Profile
-from .serializers import ProfileSerializer, ProfileUpdateSerializer
+from .serializers import ProfileSerializer, ProfileUpdateSerializer, ProfileListSerializer, CustomerProfileListSerializer
 from .permissions import IsProfileOwner
 from auth_app.models import CustomUser
 
@@ -41,7 +41,7 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
 @permission_classes([IsAuthenticated])
 def business_profiles(request):
     profiles = Profile.objects.filter(user__type='business')
-    serializer = ProfileSerializer(profiles, many=True)
+    serializer = ProfileListSerializer(profiles, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -49,5 +49,5 @@ def business_profiles(request):
 @permission_classes([IsAuthenticated])
 def customer_profiles(request):
     profiles = Profile.objects.filter(user__type='customer')
-    serializer = ProfileSerializer(profiles, many=True)
+    serializer = CustomerProfileListSerializer(profiles, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)

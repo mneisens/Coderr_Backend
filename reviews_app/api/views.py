@@ -145,6 +145,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
         try:
             serializer = self.get_serializer(data=data)
             serializer.is_valid(raise_exception=True)
+            
+            offer = serializer.validated_data.get('offer')
+            if offer and Review.objects.filter(reviewer=request.user, offer=offer).exists():
+                return Response(
+                    {'error': 'Sie haben bereits eine Bewertung für dieses Angebot abgegeben.'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             review = serializer.save(reviewer=request.user)
             
             response_serializer = ReviewSerializer(review)
@@ -154,4 +162,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(f"ERROR in create: {str(e)}")
+            if "UNIQUE constraint failed" in str(e):
+                return Response(
+                    {'error': 'Sie haben bereits eine Bewertung für dieses Angebot abgegeben.'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             return Response({'error': f'Fehler beim Erstellen der Bewertung: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)

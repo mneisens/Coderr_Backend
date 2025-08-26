@@ -8,8 +8,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'reviewer', 'rating', 'description', 'created_at', 'updated_at', 'offer', 'business_user']
-        read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at', 'offer']
+        fields = ['id', 'business_user', 'reviewer', 'rating', 'description', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at']
 
     def get_business_user(self, obj):
         return obj.offer.user.id
@@ -26,8 +26,8 @@ class ReviewListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'reviewer', 'rating', 'description', 'created_at', 'updated_at', 'offer', 'business_user']
-        read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at', 'offer']
+        fields = ['id', 'reviewer', 'rating', 'description', 'created_at', 'updated_at', 'business_user']
+        read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at']
 
     def get_business_user(self, obj):
         return obj.offer.user.id

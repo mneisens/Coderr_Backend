@@ -63,10 +63,30 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         details_data = validated_data.pop('details')
         offer = Offer.objects.create(**validated_data)
 
+        created_details = []
         for detail_data in details_data:
-            OfferDetail.objects.create(offer=offer, **detail_data)
-
+            detail = OfferDetail.objects.create(offer=offer, **detail_data)
+            created_details.append(detail)
+        offer._created_details = created_details
         return offer
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        response_data = {
+            'id': instance.id,
+            'title': data.get('title'),
+            'image': data.get('image'),
+            'description': data.get('description'),
+            'details': []
+        }
+        
+        if hasattr(instance, '_created_details'):
+            response_data['details'] = OfferDetailSerializer(instance._created_details, many=True).data
+        else:
+            details = instance.details.all()
+            response_data['details'] = OfferDetailSerializer(details, many=True).data
+            
+        return response_data
 
     def validate_details(self, value):
         if len(value) != 3:
@@ -113,6 +133,20 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
                             pass
 
         return instance
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        response_data = {
+            'id': instance.id,
+            'title': data.get('title'),
+            'image': data.get('image'),
+            'description': data.get('description'),
+            'details': []
+        }
+        details = instance.details.all()
+        response_data['details'] = OfferDetailSerializer(details, many=True).data
+            
+        return response_data
 
 
 class OfferRetrieveSerializer(serializers.ModelSerializer):
