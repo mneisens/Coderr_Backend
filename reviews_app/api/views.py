@@ -186,7 +186,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         print(f"Query params: {request.query_params}")
         print(f"User: {request.user}")
         
-        # Check if user is customer before proceeding
         if not request.user.is_authenticated:
             return Response(
                 {'error': 'Der Benutzer muss authentifiziert sein und ein Kundenprofil besitzen.'}, 
@@ -195,8 +194,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
         
         if request.user.type != 'customer':
             return Response(
-                {'error': 'Der Benutzer muss authentifiziert sein und ein Kundenprofil besitzen.'}, 
-                status=status.HTTP_401_UNAUTHORIZED
+                {'error': 'Nur Kunden können Bewertungen erstellen.'}, 
+                status=status.HTTP_403_FORBIDDEN
             )
         
         data = request.data.copy()

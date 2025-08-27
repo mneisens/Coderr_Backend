@@ -25,10 +25,25 @@ class OfferDetailUpdateSerializer(serializers.ModelSerializer):
     Used specifically for PATCH operations on offer details.
     """
     id = serializers.IntegerField(required=False)
+    offer_type = serializers.CharField(required=True)
 
     class Meta:
         model = OfferDetail
         fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
+
+    def validate(self, data):
+        """
+        Validates that offer_type is provided and valid.
+        """
+        offer_type = data.get('offer_type')
+        if not offer_type:
+            raise serializers.ValidationError("Der Typ (offer_type) muss immer mitgegeben werden, um das Detail eindeutig zu identifizieren.")
+        
+        valid_types = ['basic', 'standard', 'premium']
+        if offer_type not in valid_types:
+            raise serializers.ValidationError(f"Ungültiger offer_type. Erlaubte Werte: {', '.join(valid_types)}")
+        
+        return data
 
 
 class UserDetailsSerializer(serializers.ModelSerializer):
@@ -146,6 +161,11 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         if details_data:
             for detail_data in details_data:
                 detail_id = detail_data.get('id')
+                offer_type = detail_data.get('offer_type')
+                
+                if not offer_type:
+                    raise serializers.ValidationError("Der Typ (offer_type) muss immer mitgegeben werden, um das Detail eindeutig zu identifizieren.")
+                
                 if detail_id:
                     try:
                         detail = OfferDetail.objects.get(id=detail_id, offer=instance)
@@ -156,16 +176,14 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
                     except OfferDetail.DoesNotExist:
                         pass
                 else:
-                    offer_type = detail_data.get('offer_type')
-                    if offer_type:
-                        try:
-                            detail = OfferDetail.objects.get(offer=instance, offer_type=offer_type)
-                            for field, value in detail_data.items():
-                                if field != 'id' and hasattr(detail, field):
-                                    setattr(detail, field, value)
-                            detail.save()
-                        except OfferDetail.DoesNotExist:
-                            pass
+                    try:
+                        detail = OfferDetail.objects.get(offer=instance, offer_type=offer_type)
+                        for field, value in detail_data.items():
+                            if field != 'id' and hasattr(detail, field):
+                                setattr(detail, field, value)
+                        detail.save()
+                    except OfferDetail.DoesNotExist:
+                        pass
 
         return instance
 

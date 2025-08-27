@@ -50,7 +50,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         elif self.action in ['list', 'retrieve']:
             return [IsAuthenticated()]
         elif self.action in ['update', 'partial_update']:
-            return [IsAuthenticated(), IsBusinessUser()]
+            return [IsAuthenticated()]
         elif self.action == 'destroy':
             return [IsAuthenticated(), IsAdminUser()]
         return super().get_permissions()
@@ -71,6 +71,42 @@ class OrderViewSet(viewsets.ModelViewSet):
 
             if "Offer detail not found" in str(e):
                 return Response({'error': 'Das angegebene Angebotsdetail wurde nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Updates an order.
+        Handles 404 and permission errors with appropriate status codes.
+        """
+        try:
+            order_id = self.kwargs.get('pk')
+            order = get_object_or_404(Order, id=order_id)
+
+            if not request.user.is_staff and order.business_user != request.user:
+                return Response({'error': 'Benutzer hat keine Berechtigung, diese Bestellung zu aktualisieren.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            return super().update(request, *args, **kwargs)
+        except Http404:
+            return Response({'error': 'Die angegebene Bestellung wurde nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Partially updates an order.
+        Handles 404 and permission errors with appropriate status codes.
+        """
+        try:
+            order_id = self.kwargs.get('pk')
+            order = get_object_or_404(Order, id=order_id)
+            
+            if not request.user.is_staff and order.business_user != request.user:
+                return Response({'error': 'Benutzer hat keine Berechtigung, diese Bestellung zu aktualisieren.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            return super().partial_update(request, *args, **kwargs)
+        except Http404:
+            return Response({'error': 'Die angegebene Bestellung wurde nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
