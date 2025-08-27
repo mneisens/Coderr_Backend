@@ -1,7 +1,9 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 from ..models import Profile
 from .serializers import (
     ProfileSerializer, 
@@ -23,9 +25,17 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         """
         Returns the profile object for the specified user ID.
+        Checks if the current user is the owner of this profile.
         """
         pk = self.kwargs.get('pk')
-        return get_object_or_404(Profile, user_id=pk)
+        profile = get_object_or_404(Profile, user_id=pk)
+        
+        if self.request.method not in ['GET', 'HEAD', 'OPTIONS']:
+            if profile.user != self.request.user:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('Authentifizierter Benutzer ist nicht der Eigentümer des Profils.')
+        
+        return profile
 
     def get_serializer_class(self):
         """
@@ -38,13 +48,28 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
     def update(self, request, *args, **kwargs):
         """
         Updates a profile and returns it with 200 status code.
+        Handles 404 and permission errors with appropriate status codes.
         """
-        response = super().update(request, *args, **kwargs)
-        
-        # Return the full profile data using ProfileSerializer for frontend compatibility
-        instance = self.get_object()
-        serializer = ProfileSerializer(instance)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            pk = self.kwargs.get('pk')
+            profile = get_object_or_404(Profile, user_id=pk)
+            
+            if profile.user != request.user:
+                return Response(
+                    {'error': 'Authentifizierter Benutzer ist nicht der Eigentümer des Profils.'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            response = super().update(request, *args, **kwargs)
+            
+            instance = self.get_object()
+            serializer = ProfileSerializer(instance)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Http404:
+            return Response({'error': 'Das Benutzerprofil wurde nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionDenied:
+            return Response({'error': 'Authentifizierter Benutzer ist nicht der Eigentümer des Profils.'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class BusinessProfilesView(generics.ListAPIView):

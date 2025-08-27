@@ -113,7 +113,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         Returns the appropriate permission classes based on the action.
         """
         if self.action == 'create':
-            return [IsAuthenticated(), IsCustomerUser()]
+            return [IsAuthenticated()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsReviewOwner()]
         return super().get_permissions()
@@ -168,7 +168,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
         if Review.objects.filter(reviewer=self.request.user, offer=offer).exists():
             print("ERROR: Bewertung existiert bereits")
-            raise ValidationError('Sie haben bereits eine Bewertung für dieses Angebot abgegeben.')
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Ein Benutzer kann nur eine Bewertung pro Geschäftsprofil abgeben.')
 
         print("Speichere Bewertung...")
         serializer.save(reviewer=self.request.user)
@@ -184,6 +185,19 @@ class ReviewViewSet(viewsets.ModelViewSet):
         print(f"Request data: {request.data}")
         print(f"Query params: {request.query_params}")
         print(f"User: {request.user}")
+        
+        # Check if user is customer before proceeding
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Der Benutzer muss authentifiziert sein und ein Kundenprofil besitzen.'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        if request.user.type != 'customer':
+            return Response(
+                {'error': 'Der Benutzer muss authentifiziert sein und ein Kundenprofil besitzen.'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         
         data = request.data.copy()
         
@@ -209,13 +223,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=data)
             serializer.is_valid(raise_exception=True)
             
-            offer = serializer.validated_data.get('offer')
-            if offer and Review.objects.filter(reviewer=request.user, offer=offer).exists():
-                return Response(
-                    {'error': 'Sie haben bereits eine Bewertung für dieses Angebot abgegeben.'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
             review = serializer.save(reviewer=request.user)
             
             response_serializer = ReviewSerializer(review)
@@ -223,11 +230,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
             
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except PermissionDenied as e:
+            return Response({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             print(f"ERROR in create: {str(e)}")
             if "UNIQUE constraint failed" in str(e):
                 return Response(
-                    {'error': 'Sie haben bereits eine Bewertung für dieses Angebot abgegeben.'}, 
-                    status=status.HTTP_400_BAD_REQUEST
+                    {'error': 'Ein Benutzer kann nur eine Bewertung pro Geschäftsprofil abgeben.'}, 
+                    status=status.HTTP_403_FORBIDDEN
                 )
             return Response({'error': f'Fehler beim Erstellen der Bewertung: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
