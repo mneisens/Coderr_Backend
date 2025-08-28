@@ -5,7 +5,9 @@ django-cors-headers==4.7.0
 django-filter==24.1
 djangorestframework==3.16.1
 flake8==7.3.0
+gunicorn==23.0.0
 mccabe==0.7.0
+packaging==25.0
 pycodestyle==2.14.0
 pyflakes==3.4.0
 sqlparse==0.5.3

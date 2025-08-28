@@ -52,3 +52,4 @@ urlpatterns = [
     path('api/', include('orders_app.api.urls')),
     path('api/', include('reviews_app.api.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
